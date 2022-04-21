@@ -123,11 +123,11 @@ The earliest date to go back when doing a full sync
 	"ApiKey":"<api key>",
 	"ApiSecret":"<api secret>",
 	"ClientCertificate": {
-        "StoreName": "My",
-        "StoreLocation": "LocalMachine",
-        "Thumbprint": "0123456789abcdef"
-    },
-    "SyncStartDate":"2022-01-01"
+		"StoreName": "My",
+		"StoreLocation": "LocalMachine",
+		"Thumbprint": "0123456789abcdef"
+	},
+	"SyncStartDate":"2022-01-01"
   },
 ```
 ## GatewayRegistration
