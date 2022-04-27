@@ -8,6 +8,9 @@
 This AnyGateway plug-in enables issuance, revocation, and synchronization of certificates from GlobalSign's Atlas platform.  
 # Prerequisites
 
+## Port Access
+The GlobalSign Atlas CA Gateway makes outbound connections on port 8443. Make sure that port is accessible for outbound communications.
+
 ## Certificate Chain
 
 In order to enroll for certificates the Keyfactor Command server must trust the trust chain. Once you create your Root and/or Subordinate CA, make sure to import the certificate chain into the AnyGateway and Command Server certificate store
@@ -108,7 +111,7 @@ The Certificate Managers section is optional.
 	}
 ```
 ## CAConnection
-The CA Connection section will determine the API endpoint and configuration data used to connect to Entrust CA Gateway. 
+The CA Connection section will determine the API endpoint and configuration data used to connect to the GlobalSign Atlas CA. 
 * ```ApiKey```
 The API key for the Atlas credentials the gateway will use.  
 * ```ApiSecret```
