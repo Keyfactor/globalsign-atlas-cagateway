@@ -11,6 +11,10 @@ This AnyGateway plug-in enables issuance, revocation, and synchronization of cer
 ## Port Access
 The GlobalSign Atlas CA Gateway makes outbound connections on port 8443. Make sure that port is accessible for outbound communications.
 
+## mTLS Certificate
+The mTLS certificate obtained from GlobalSign to use as the client certificate should be installed in the local machine certificate store on the Gateway server
+The gateway service account (default Network Service) should be granted Read permission on the private key of the certificate
+
 ## Certificate Chain
 
 In order to enroll for certificates the Keyfactor Command server must trust the trust chain. Once you create your Root and/or Subordinate CA, make sure to import the certificate chain into the AnyGateway and Command Server certificate store
