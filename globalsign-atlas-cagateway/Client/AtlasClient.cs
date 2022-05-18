@@ -180,12 +180,24 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			{
 				if (wex.Response != null)
 				{
-					using (var stream = wex.Response.GetResponseStream())
-					using (var reader = new StreamReader(stream))
+					using (var errorResponse = (HttpWebResponse)wex.Response)
 					{
-						string errorString = reader.ReadToEnd();
-						Logger.LogError($"Atlas CA has returned an error from enrolling: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
-						throw new Exception(errorString, wex);
+						if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+						{
+							Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds");
+							System.Threading.Thread.Sleep(5000);
+							return RequestNewCertificate(request);
+						}
+						else
+						{
+							using (var stream = wex.Response.GetResponseStream())
+							using (var reader = new StreamReader(stream))
+							{
+								string errorString = reader.ReadToEnd();
+								Logger.LogError($"Atlas CA has returned an error from enrolling: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
+								throw new Exception(errorString, wex);
+							}
+						}
 					}
 				}
 				else
@@ -244,12 +256,24 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			{
 				if (wex.Response != null)
 				{
-					using (var stream = wex.Response.GetResponseStream())
-					using (var reader = new StreamReader(stream))
+					using (var errorResponse = (HttpWebResponse)wex.Response)
 					{
-						string errorString = reader.ReadToEnd();
-						Logger.LogError($"Atlas CA has returned an error from retrieving certificate: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
-						throw new Exception(errorString, wex);
+						if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+						{
+							Logger.LogInformation($"Request was rate-limited. Trying again in 5 seconds");
+							System.Threading.Thread.Sleep(5000);
+							return GetCertificate(caRequestID);
+						}
+						else
+						{
+							using (var stream = wex.Response.GetResponseStream())
+							using (var reader = new StreamReader(stream))
+							{
+								string errorString = reader.ReadToEnd();
+								Logger.LogError($"Atlas CA has returned an error from retrieving certificate: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
+								throw new Exception(errorString, wex);
+							}
+						}
 					}
 				}
 				else
@@ -301,12 +325,24 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			{
 				if (wex.Response != null)
 				{
-					using (var stream = wex.Response.GetResponseStream())
-					using (var reader = new StreamReader(stream))
+					using (var errorResponse = (HttpWebResponse)wex.Response)
 					{
-						string errorString = reader.ReadToEnd();
-						Logger.LogError($"Atlas CA has returned an error from revoking certificate: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
-						throw new Exception(errorString, wex);
+						if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+						{
+							Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds.");
+							System.Threading.Thread.Sleep(5000);
+							RevokeCertificate(caRequestID);
+						}
+						else
+						{
+							using (var stream = wex.Response.GetResponseStream())
+							using (var reader = new StreamReader(stream))
+							{
+								string errorString = reader.ReadToEnd();
+								Logger.LogError($"Atlas CA has returned an error from revoking certificate: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
+								throw new Exception(errorString, wex);
+							}
+						}
 					}
 				}
 				else
@@ -322,7 +358,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			}
 		}
 
-		public void GetValidationPolicy()
+		public ValidationPolicyResponse GetValidationPolicy()
 		{
 			try
 			{
@@ -339,23 +375,44 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				}
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
-
 				Logger.LogTrace($"Atlas Request: GET {targetUri}");
-				using (HttpWebResponse response = (HttpWebResponse)apiRequest.GetResponse())
+				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
-					var fullResponse = new StreamReader(response.GetResponseStream()).ReadToEnd();
+					var fullResponse = new StreamReader(apiResponse.GetResponseStream()).ReadToEnd();
+					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
+					if (apiResponse.StatusCode == HttpStatusCode.OK)
+					{
+						ValidationPolicyResponse validationResponse = JsonConvert.DeserializeObject<ValidationPolicyResponse>(fullResponse);
+						return validationResponse;
+					}
+					else
+					{
+						throw new Exception("Error retrieving validation policy");
+					}
 				}
 			}
 			catch (WebException wex)
 			{
 				if (wex.Response != null)
 				{
-					using (var stream = wex.Response.GetResponseStream())
-					using (var reader = new StreamReader(stream))
+					using (var errorResponse = (HttpWebResponse)wex.Response)
 					{
-						string errorString = reader.ReadToEnd();
-						Logger.LogError($"Atlas CA has returned an error from retrieving validation policy: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
-						throw new Exception(errorString, wex);
+						if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+						{
+							Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds.");
+							System.Threading.Thread.Sleep(5000);
+							return GetValidationPolicy();
+						}
+						else
+						{
+							using (var stream = wex.Response.GetResponseStream())
+							using (var reader = new StreamReader(stream))
+							{
+								string errorString = reader.ReadToEnd();
+								Logger.LogError($"Atlas CA has returned an error from retrieving validation policy: '{((HttpWebResponse)wex.Response).StatusCode}: {errorString}");
+								throw new Exception(errorString, wex);
+							}
+						}
 					}
 				}
 				else
@@ -437,6 +494,15 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 					{
 						if (wex.Response != null)
 						{
+							using (var errorResponse = (HttpWebResponse)wex.Response)
+							{
+								if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+								{
+									Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds.");
+									System.Threading.Thread.Sleep(5000);
+									continue;
+								}
+							}
 							using (var stream = wex.Response.GetResponseStream())
 							using (var reader = new StreamReader(stream))
 							{
