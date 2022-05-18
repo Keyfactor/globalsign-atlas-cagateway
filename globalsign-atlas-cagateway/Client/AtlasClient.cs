@@ -81,6 +81,8 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 
 				LoginResponse apiResponse = new LoginResponse();
 				TokenTime = DateTime.UtcNow;
+
+				Logger.LogTrace($"Atlas Request: POST {targetUri}");
 				using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
 				{
 					apiResponse = JsonConvert.DeserializeObject<LoginResponse>(new StreamReader(response.GetResponseStream()).ReadToEnd());
@@ -120,6 +122,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				requestStream.Write(postBytes, 0, postBytes.Length);
 				requestStream.Close();
 
+				Logger.LogTrace($"Atlas Request: POST {targetUri}");
 				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
 					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
@@ -148,6 +151,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
 
+				Logger.LogTrace($"Atlas Request: GET {targetUri}");
 				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
 					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
@@ -227,6 +231,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
 
+				Logger.LogTrace($"Atlas Request: GET {targetUri}");
 				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
 					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
@@ -302,6 +307,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
 
+				Logger.LogTrace($"Atlas Request: DELETE {targetUri}");
 				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
 					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
@@ -369,7 +375,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				}
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
-
+				Logger.LogTrace($"Atlas Request: GET {targetUri}");
 				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
 					var fullResponse = new StreamReader(apiResponse.GetResponseStream()).ReadToEnd();
@@ -424,6 +430,10 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 
 		public List<CertificateDetailsResponse> GetAllCertificates(DateTime? lastIncrementalSync, bool doFullSync)
 		{
+			if (!lastIncrementalSync.HasValue)
+			{
+				lastIncrementalSync = SyncStart;
+			}
 			DateTime startTime = doFullSync ? SyncStart : (lastIncrementalSync.Value);
 			DateTime endTime = DateTime.UtcNow;
 			long startTimeTicks = ((DateTimeOffset)startTime).ToUnixTimeSeconds();
@@ -459,6 +469,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 					List<CertificateStatusResponse> certResponse;
 					try
 					{
+						Logger.LogTrace($"Atlas Request: GET {targetUri}");
 						using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 						{
 							Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
