@@ -72,43 +72,182 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 			Enroll enrollData = new Enroll();
 			csr = PemUtilities.DERToPEM(Convert.FromBase64String(csr), PemUtilities.PemObjectType.CertRequest);
 			enrollData.CSR = csr;
-
+			var validation = client.GetValidationPolicy();
 			var days = (productInfo.ProductParameters.ContainsKey("Lifetime")) ? int.Parse(productInfo.ProductParameters["Lifetime"]) : 365;
+
+			Logger.Trace($"Verifying validity period:");
+			long validitySeconds = days * 24 * 60 * 60;
+			if (validitySeconds > validation.Validity.SecondsMax || validitySeconds < validation.Validity.SecondsMin)
+			{
+				int minDays = Convert.ToInt32(Math.Ceiling(validation.Validity.SecondsMin / 60.0 / 60.0 / 24.0));
+				int maxDays = Convert.ToInt32(Math.Floor(validation.Validity.SecondsMax / 60.0 / 60.0 / 24.0));
+				string errMsg = $"Invalid validity period. Valid period is between {minDays} and {maxDays} days.";
+				Logger.Error(errMsg);
+				throw new Exception(errMsg);
+			}
 
 			enrollData.Validity.NotBefore = DateTime.UtcNow;
 			enrollData.Validity.NotAfter = enrollData.Validity.NotBefore.AddDays(days);
 
 			X509Name subjectParsed = new X509Name(subject);
-			enrollData.SubjectDN.CommonName = subjectParsed.GetValueList(X509Name.CN).Cast<string>().LastOrDefault();
-			enrollData.SubjectDN.Country = subjectParsed.GetValueList(X509Name.C).Cast<string>().LastOrDefault();
-			enrollData.SubjectDN.Email = subjectParsed.GetValueList(X509Name.E).Cast<string>().LastOrDefault();
-			enrollData.SubjectDN.Locality = subjectParsed.GetValueList(X509Name.L).Cast<string>().LastOrDefault();
-			enrollData.SubjectDN.Organization = subjectParsed.GetValueList(X509Name.O).Cast<string>().LastOrDefault();
-			enrollData.SubjectDN.State = subjectParsed.GetValueList(X509Name.ST).Cast<string>().LastOrDefault();
+			// Only populate subject fields that are required or optional
+			string subjectField, validationPresence;
+
+			subjectField = subjectParsed.GetValueList(X509Name.CN).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.CommonName.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"Common Name is required");
+					throw new Exception("Common Name is required");
+				}
+				enrollData.SubjectDN.CommonName = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow Common Name, skipping");
+			}
+
+			subjectField = subjectParsed.GetValueList(X509Name.C).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.Country.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"Country is required");
+					throw new Exception("Country is required");
+				}
+				enrollData.SubjectDN.Country = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow Country, skipping");
+			}
+
+			subjectField = subjectParsed.GetValueList(X509Name.E).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.Email.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"Email is required");
+					throw new Exception("Email is required");
+				}
+				enrollData.SubjectDN.Email = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow Email, skipping");
+			}
+
+			subjectField = subjectParsed.GetValueList(X509Name.L).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.Locality.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"Locality is required");
+					throw new Exception("Locality is required");
+				}
+				enrollData.SubjectDN.Locality = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow Locality, skipping");
+			}
+
+			subjectField = subjectParsed.GetValueList(X509Name.O).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.Organization.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"Organization is required");
+					throw new Exception("Organization is required");
+				}
+				enrollData.SubjectDN.Organization = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow Organization, skipping");
+			}
+
+			subjectField = subjectParsed.GetValueList(X509Name.ST).Cast<string>().LastOrDefault();
+			validationPresence = validation.SubjectDN.State.Presence;
+			if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) || validationPresence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				if (validationPresence.Equals("required", StringComparison.OrdinalIgnoreCase) && subjectField == null)
+				{
+					Logger.Error($"State is required");
+					throw new Exception("State is required");
+				}
+				enrollData.SubjectDN.State = subjectField;
+			}
+			else if (subjectField != null)
+			{
+				Logger.Warn($"Validation Policy does not allow State, skipping");
+			}
 
 			var sanDict = new Dictionary<string, string[]>(san, StringComparer.OrdinalIgnoreCase);
-			if (sanDict.ContainsKey("dns"))
-				foreach (var dnsSan in sanDict["dns"])
-					enrollData.SANs.DNSList.Add(dnsSan);
-
-			if (sanDict.ContainsKey("ipaddress"))
-				foreach (var ipSan in sanDict["ipaddress"])
-					enrollData.SANs.IPList.Add(ipSan);
-
-			if (sanDict.ContainsKey("email"))
-				foreach (var emailSan in sanDict["email"])
-					enrollData.SANs.EmailList.Add(emailSan);
-
-			string keyUsage = ((productInfo.ProductParameters.ContainsKey("KeyUsage")) ? productInfo.ProductParameters["KeyUsage"] : "clientserver").ToLower();
-			if (keyUsage.Contains("server"))
+			if (!validation.San.DNSNames.Static)
 			{
-				enrollData.EKUList.Add("1.3.6.1.5.5.7.3.1");
+				if (sanDict.ContainsKey("dns"))
+					foreach (var dnsSan in sanDict["dns"])
+						enrollData.SANs.DNSList.Add(dnsSan);
 			}
-			if (keyUsage.Contains("client"))
+			else if (sanDict.ContainsKey("dns"))
 			{
-				enrollData.EKUList.Add("1.3.6.1.5.5.7.3.2");
+				Logger.Warn($"Validation Policy does not allow DNS SANs, skipping");
 			}
-			enrollData.Sig.HashAlgorithm = "SHA-256";
+
+			if (!validation.San.IPAddresses.Static)
+			{
+				if (sanDict.ContainsKey("ipaddress"))
+					foreach (var ipSan in sanDict["ipaddress"])
+						enrollData.SANs.IPList.Add(ipSan);
+			}
+			else if (sanDict.ContainsKey("ipaddress"))
+			{
+				Logger.Warn($"Validation Policy does not allow IP address SANs, skipping");
+			}
+
+			if (!validation.San.Emails.Static)
+			{
+				if (sanDict.ContainsKey("email"))
+					foreach (var emailSan in sanDict["email"])
+						enrollData.SANs.EmailList.Add(emailSan);
+			}
+			else if (sanDict.ContainsKey("email"))
+			{
+				Logger.Warn($"Validation Policy does not allow email SANs, skipping");
+			}
+
+			string keyUsage = ((productInfo.ProductParameters.ContainsKey("KeyUsage")) ? productInfo.ProductParameters["KeyUsage"] : "").ToLower();
+			if (!validation.EKUs.EKUs.Static)
+			{
+				if (string.IsNullOrEmpty(keyUsage))
+				{
+					keyUsage = "clientserver";
+				}
+				if (keyUsage.Contains("server"))
+				{
+					enrollData.EKUList.Add("1.3.6.1.5.5.7.3.1");
+				}
+				if (keyUsage.Contains("client"))
+				{
+					enrollData.EKUList.Add("1.3.6.1.5.5.7.3.2");
+				}
+			}
+			else if (!string.IsNullOrEmpty(keyUsage))
+			{
+				Logger.Warn($"Validation Policy does not allow EKUs, skipping");
+			}
+
+			if (validation.Signature.HashAlgorithm.Presence.Equals("required", StringComparison.OrdinalIgnoreCase) || validation.Signature.HashAlgorithm.Presence.Equals("optional", StringComparison.OrdinalIgnoreCase))
+			{
+				enrollData.Sig.HashAlgorithm = "SHA-256";
+			}
 
 			var response = client.RequestNewCertificate(enrollData);
 

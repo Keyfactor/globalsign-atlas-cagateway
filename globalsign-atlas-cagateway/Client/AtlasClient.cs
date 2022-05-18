@@ -316,7 +316,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			}
 		}
 
-		public void GetValidationPolicy()
+		public ValidationPolicyResponse GetValidationPolicy()
 		{
 			try
 			{
@@ -334,9 +334,19 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				apiRequest.ClientCertificates.Add(AuthCert);
 				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
 
-				using (HttpWebResponse response = (HttpWebResponse)apiRequest.GetResponse())
+				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
 				{
-					var fullResponse = new StreamReader(response.GetResponseStream()).ReadToEnd();
+					var fullResponse = new StreamReader(apiResponse.GetResponseStream()).ReadToEnd();
+					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
+					if (apiResponse.StatusCode == HttpStatusCode.OK)
+					{
+						ValidationPolicyResponse validationResponse = JsonConvert.DeserializeObject<ValidationPolicyResponse>(fullResponse);
+						return validationResponse;
+					}
+					else
+					{
+						throw new Exception("Error retrieving validation policy");
+					}
 				}
 			}
 			catch (WebException wex)
