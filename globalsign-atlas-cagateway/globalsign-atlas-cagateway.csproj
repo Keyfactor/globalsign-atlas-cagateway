@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="APIProxy\AtlasBaseCalls.cs" />
+    <Compile Include="APIProxy\ValidationPolicy.cs" />
     <Compile Include="APIProxy\Certificate.cs" />
     <Compile Include="APIProxy\Enroll.cs" />
     <Compile Include="APIProxy\Login.cs" />
