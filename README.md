@@ -124,6 +124,10 @@ The corresponding API secret value that matches with the ApiKey
 The location and thumbprint of the client auth certificate to use with the Atlas API
 * ```SyncStartDate```
 The earliest date to go back when doing a full sync
+* ```PickupRetries```
+(OPTIONAL)This is the number of times the AnyGateway will attempt to pickup an new certificate before reporting an error. This setting applies to new, renewed, or reissued certificates. Default is 5.
+* ```PickupDelay```
+(OPTIONAL)This is the number of seconds between retries when attempting to download a certificate. Default is 5.
 
 ```json
   "CAConnection": {
@@ -134,7 +138,9 @@ The earliest date to go back when doing a full sync
 		"StoreLocation": "LocalMachine",
 		"Thumbprint": "0123456789abcdef"
 	},
-	"SyncStartDate":"2022-01-01"
+	"SyncStartDate":"2022-01-01",
+    "PickupRetries":5,
+	"PickupDelay":5,
   },
 ```
 ## GatewayRegistration
