@@ -15,5 +15,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 		public const string STORE_LOCATION = "StoreLocation";
 		public const string THUMBPRINT = "Thumbprint";
 		public const string SYNC_START_DATE = "SyncStartDate";
+		public const string PICKUP_DELAY = "PickupDelay";
+		public const string PICKUP_RETRIES = "PickupRetries";
 	}
 }

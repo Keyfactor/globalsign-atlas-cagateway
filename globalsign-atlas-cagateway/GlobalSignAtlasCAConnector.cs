@@ -249,8 +249,14 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 				enrollData.Sig.HashAlgorithm = "SHA-256";
 			}
 
-			var response = client.RequestNewCertificate(enrollData);
+			int pickupDelay = connectionInfo.ContainsKey(AtlasConstants.PICKUP_DELAY) ? (int)connectionInfo[AtlasConstants.PICKUP_DELAY] : 5;
+			int pickupRetries = connectionInfo.ContainsKey(AtlasConstants.PICKUP_RETRIES) ? (int)connectionInfo[AtlasConstants.PICKUP_RETRIES] : 5;
 
+			var response = client.RequestNewCertificate(enrollData, pickupDelay, pickupRetries);
+			if (response.Status != PKIConstants.Microsoft.RequestDisposition.ISSUED)
+			{
+				throw new Exception($"Certificate was not issued. Status: {response.StatusMessage}");
+			}
 			EnrollmentResult result = new EnrollmentResult();
 			result.CARequestID = response.SerialNumber;
 			result.Status = (int)response.Status;
@@ -464,6 +470,8 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 				{ Constants.API_SECRET, "" },
 				{ Constants.CLIENT_CERTIFICATE, clientCert },
 				{ Constants.SYNC_START_DATE, "2022-01-01" },
+				{ Constants.PICKUP_DELAY, 5 },
+				{ Constants.PICKUP_RETRIES, 5 }
 			};
 		}
 
