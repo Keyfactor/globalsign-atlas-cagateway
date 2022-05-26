@@ -8,6 +8,13 @@
 This AnyGateway plug-in enables issuance, revocation, and synchronization of certificates from GlobalSign's Atlas platform.  
 # Prerequisites
 
+## Port Access
+The GlobalSign Atlas CA Gateway makes outbound connections on port 8443. Make sure that port is accessible for outbound communications.
+
+## mTLS Certificate
+The mTLS certificate obtained from GlobalSign to use as the client certificate should be installed in the local machine certificate store on the Gateway server
+The gateway service account (default Network Service) should be granted Read permission on the private key of the certificate
+
 ## Certificate Chain
 
 In order to enroll for certificates the Keyfactor Command server must trust the trust chain. Once you create your Root and/or Subordinate CA, make sure to import the certificate chain into the AnyGateway and Command Server certificate store
@@ -108,7 +115,7 @@ The Certificate Managers section is optional.
 	}
 ```
 ## CAConnection
-The CA Connection section will determine the API endpoint and configuration data used to connect to Entrust CA Gateway. 
+The CA Connection section will determine the API endpoint and configuration data used to connect to the GlobalSign Atlas CA. 
 * ```ApiKey```
 The API key for the Atlas credentials the gateway will use.  
 * ```ApiSecret```
@@ -117,6 +124,10 @@ The corresponding API secret value that matches with the ApiKey
 The location and thumbprint of the client auth certificate to use with the Atlas API
 * ```SyncStartDate```
 The earliest date to go back when doing a full sync
+* ```PickupRetries```
+(OPTIONAL)This is the number of times the AnyGateway will attempt to pickup an new certificate before reporting an error. This setting applies to new, renewed, or reissued certificates. Default is 5.
+* ```PickupDelay```
+(OPTIONAL)This is the number of seconds between retries when attempting to download a certificate. Default is 5.
 
 ```json
   "CAConnection": {
@@ -127,7 +138,9 @@ The earliest date to go back when doing a full sync
 		"StoreLocation": "LocalMachine",
 		"Thumbprint": "0123456789abcdef"
 	},
-	"SyncStartDate":"2022-01-01"
+	"SyncStartDate":"2022-01-01",
+    "PickupRetries":5,
+	"PickupDelay":5,
   },
 ```
 ## GatewayRegistration

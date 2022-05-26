@@ -96,7 +96,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 			}
 		}
 
-		public EnrollResponse RequestNewCertificate(Enroll request)
+		public EnrollResponse RequestNewCertificate(Enroll request, int pickupDelay, int pickupRetries)
 		{
 			EnrollResponse enrollResponse = new EnrollResponse();
 			string certUrl = null;
@@ -141,39 +141,87 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 				method = "GET";
 
 				Logger.LogTrace($"Enrollment successful, retrieving new certificate");
-				apiRequest = (HttpWebRequest)WebRequest.Create(targetUri);
-				apiRequest.Method = method;
-				apiRequest.ContentType = "application/json;charset=utf-8";
-				if (string.IsNullOrEmpty(Token) || TokenTime.AddMinutes(10) < DateTime.UtcNow)
+				bool success = true;
+				int attempt = 0;
+				do
 				{
-					RefreshApiToken();
-				}
-				apiRequest.ClientCertificates.Add(AuthCert);
-				apiRequest.Headers.Add("Authorization", "Bearer " + Token);
+					try
+					{
+						System.Threading.Thread.Sleep(pickupDelay * 1000);
+						apiRequest = (HttpWebRequest)WebRequest.Create(targetUri);
+						apiRequest.Method = method;
+						apiRequest.ContentType = "application/json;charset=utf-8";
+						if (string.IsNullOrEmpty(Token) || TokenTime.AddMinutes(10) < DateTime.UtcNow)
+						{
+							RefreshApiToken();
+						}
+						apiRequest.ClientCertificates.Add(AuthCert);
+						apiRequest.Headers.Add("Authorization", "Bearer " + Token);
 
-				Logger.LogTrace($"Atlas Request: GET {targetUri}");
-				using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
-				{
-					Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
-					if (apiResponse.StatusCode == HttpStatusCode.OK)
-					{
-						CertificateResponse certResponse = JsonConvert.DeserializeObject<CertificateResponse>(new StreamReader(apiResponse.GetResponseStream()).ReadToEnd());
-						enrollResponse.Status = CSS.PKI.PKIConstants.Microsoft.RequestDisposition.ISSUED;
-						enrollResponse.Cert = certResponse.Certificate;
-						enrollResponse.StatusMessage = "Successfully enrolled for certificate {0}";
-					}
-					else if (apiResponse.StatusCode == HttpStatusCode.Accepted)
-					{
-						CertificateResponse certResponse = JsonConvert.DeserializeObject<CertificateResponse>(new StreamReader(apiResponse.GetResponseStream()).ReadToEnd());
+						Logger.LogTrace($"Atlas Request: GET {targetUri}");
+						using (HttpWebResponse apiResponse = (HttpWebResponse)apiRequest.GetResponse())
+						{
+							Logger.LogTrace($"Atlas API returned response {apiResponse.StatusCode}");
+							if (apiResponse.StatusCode == HttpStatusCode.OK)
+							{
+								Logger.LogTrace($"Certificate retrieved");
+								CertificateResponse certResponse = JsonConvert.DeserializeObject<CertificateResponse>(new StreamReader(apiResponse.GetResponseStream()).ReadToEnd());
+								enrollResponse.Status = CSS.PKI.PKIConstants.Microsoft.RequestDisposition.ISSUED;
+								enrollResponse.Cert = certResponse.Certificate;
+								enrollResponse.StatusMessage = "Successfully enrolled for certificate {0}";
+							}
+							else if (apiResponse.StatusCode == HttpStatusCode.Accepted)
+							{
+								Logger.LogTrace($"Certificate request in process");
+								CertificateResponse certResponse = JsonConvert.DeserializeObject<CertificateResponse>(new StreamReader(apiResponse.GetResponseStream()).ReadToEnd());
 
-						enrollResponse.Status = CSS.PKI.PKIConstants.Microsoft.RequestDisposition.IN_PROCESS;
-						enrollResponse.StatusMessage = certResponse.Description;
+								enrollResponse.Status = CSS.PKI.PKIConstants.Microsoft.RequestDisposition.IN_PROCESS;
+								enrollResponse.StatusMessage = certResponse.Description;
+								success = false;
+								attempt++;
+							}
+							else
+							{
+								success = false;
+								attempt++;
+							}
+						}
 					}
-					else
+					catch (WebException wex)
 					{
-						throw new Exception($"Unable to enroll for certificate, status code: {apiResponse.StatusCode}");
+						success = false;
+						if (wex.Response != null)
+						{
+							using (var errorResponse = (HttpWebResponse)wex.Response)
+							{
+								if (errorResponse.StatusCode == (HttpStatusCode)429 /*Too Many Requests*/)
+								{
+									Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds");
+									System.Threading.Thread.Sleep(5000);
+								}
+								else
+								{
+									attempt++;
+								}
+							}
+						}
+						else
+						{
+							attempt++;
+						}
 					}
-				}
+					if (!success)
+					{
+						if (attempt <= pickupRetries)
+						{
+							Logger.LogWarning($"Unable to pickup certificate. Retrying... (Retry attempt {attempt} of {pickupRetries})");
+						}
+						else
+						{
+							Logger.LogError($"Failed to pickup enrolled certificate. Current disposition status: {enrollResponse.Status.ToString()}");
+						}
+					}
+				} while (success == false && attempt <= pickupRetries);
 				return enrollResponse;
 			}
 			catch (WebException wex)
@@ -186,7 +234,7 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client
 						{
 							Logger.LogInformation("Request was rate-limited. Trying again in 5 seconds");
 							System.Threading.Thread.Sleep(5000);
-							return RequestNewCertificate(request);
+							return RequestNewCertificate(request, pickupDelay, pickupRetries);
 						}
 						else
 						{
