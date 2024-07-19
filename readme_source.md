@@ -1,9 +1,3 @@
-# GlobalSign Atlas AnyGateway
-## Ca-gateway
-
-This integration allows for the Synchronization, Enrollment, and Revocation of TLS Certificates from the GlobalSign Atlas platform.
-
-*** 
 # Introduction
 This AnyGateway plug-in enables issuance, revocation, and synchronization of certificates from GlobalSign's Atlas platform.  
 # Prerequisites
