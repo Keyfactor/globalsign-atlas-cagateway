@@ -7,5 +7,6 @@
   "link_github": true,
   "update_catalog": true,
   "support_level": "kf-supported",
-  "release_dir": "globalsign-atlas-cagateway\\bin\\Release"
+  "release_dir": "globalsign-atlas-cagateway\\bin\\Release",
+  "gateway_framework": "21.5.1"
 }
