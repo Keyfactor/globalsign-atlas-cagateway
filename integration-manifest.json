@@ -2,6 +2,11 @@
   "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
   "integration_type": "ca-gateway",
   "name": "GlobalSign Atlas AnyGateway",
-  "status": "prototype",
-  "description": "This integration allows for the Synchronization, Enrollment, and Revocation of TLS Certificates from the GlobalSign Atlas platform."
+  "status": "production",
+  "description": "This integration allows for the Synchronization, Enrollment, and Revocation of TLS Certificates from the GlobalSign Atlas platform.",
+  "link_github": true,
+  "update_catalog": true,
+  "support_level": "kf-supported",
+  "release_dir": "globalsign-atlas-cagateway\\bin\\Release",
+  "gateway_framework": "21.5.1"
 }
