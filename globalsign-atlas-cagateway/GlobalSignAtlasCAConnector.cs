@@ -14,6 +14,7 @@ using Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client;
 using Org.BouncyCastle.Asn1.X509;
 
 using System;
+using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -248,9 +249,9 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 			{
 				enrollData.Sig.HashAlgorithm = "SHA-256";
 			}
-
-			int pickupDelay = connectionInfo.ContainsKey(AtlasConstants.PICKUP_DELAY) ? (int)connectionInfo[AtlasConstants.PICKUP_DELAY] : 5;
-			int pickupRetries = connectionInfo.ContainsKey(AtlasConstants.PICKUP_RETRIES) ? (int)connectionInfo[AtlasConstants.PICKUP_RETRIES] : 5;
+			
+			int pickupDelay = connectionInfo.ContainsKey(AtlasConstants.PICKUP_DELAY) ? Convert.ToInt32(connectionInfo[AtlasConstants.PICKUP_DELAY]) : 5;
+			int pickupRetries = connectionInfo.ContainsKey(AtlasConstants.PICKUP_RETRIES) ? Convert.ToInt32(connectionInfo[AtlasConstants.PICKUP_RETRIES]) : 5;
 
 			var response = client.RequestNewCertificate(enrollData, pickupDelay, pickupRetries);
 			if (response.Status != PKIConstants.Microsoft.RequestDisposition.ISSUED)
