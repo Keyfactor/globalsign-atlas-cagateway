@@ -1,9 +1,3 @@
-# {{ name }}
-## {{ integration_type | capitalize }}
-
-{{ description }}
-
-*** 
 # Introduction
 This AnyGateway plug-in enables issuance, revocation, and synchronization of certificates from GlobalSign's Atlas platform.  
 # Prerequisites
