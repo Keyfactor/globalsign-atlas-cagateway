@@ -67,6 +67,13 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 		/// <returns></returns>
 		public override EnrollmentResult Enroll(ICertificateDataReader certificateDataReader, string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, PKIConstants.X509.RequestFormat requestFormat, RequestUtilities.EnrollmentType enrollmentType)
 		{
+			Logger.Trace("Enrollment parameters:");
+			Logger.Trace($"CSR: {csr}");
+			Logger.Trace($"Subject: {subject}");
+			Logger.Trace($"DNS SANs: {string.Join(",", san["dns"])}");
+			Logger.Trace($"Product: {productInfo.ProductID}");
+			Logger.Trace($"Product Params: {string.Join(";", productInfo.ProductParameters.Select(p => p.Key.ToString() + "=" + p.Value.ToString()))}");
+
 			Dictionary<string, object> connectionInfo = ConfigProvider.CAConnectionData;
 			AtlasClient client = CreateClient(connectionInfo);
 			Enroll enrollData = new Enroll();
