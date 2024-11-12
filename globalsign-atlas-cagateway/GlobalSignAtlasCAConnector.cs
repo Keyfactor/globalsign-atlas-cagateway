@@ -14,6 +14,7 @@ using Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas.Client;
 using Org.BouncyCastle.Asn1.X509;
 
 using System;
+using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,6 +68,13 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 		/// <returns></returns>
 		public override EnrollmentResult Enroll(ICertificateDataReader certificateDataReader, string csr, string subject, Dictionary<string, string[]> san, EnrollmentProductInfo productInfo, PKIConstants.X509.RequestFormat requestFormat, RequestUtilities.EnrollmentType enrollmentType)
 		{
+			Logger.Trace("Enrollment parameters:");
+			Logger.Trace($"CSR: {csr}");
+			Logger.Trace($"Subject: {subject}");
+			Logger.Trace($"DNS SANs: {string.Join(",", san["dns"])}");
+			Logger.Trace($"Product: {productInfo.ProductID}");
+			Logger.Trace($"Product Params: {string.Join(";", productInfo.ProductParameters.Select(p => p.Key.ToString() + "=" + p.Value.ToString()))}");
+
 			Dictionary<string, object> connectionInfo = ConfigProvider.CAConnectionData;
 			AtlasClient client = CreateClient(connectionInfo);
 			Enroll enrollData = new Enroll();
@@ -248,9 +256,9 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 			{
 				enrollData.Sig.HashAlgorithm = "SHA-256";
 			}
-
-			int pickupDelay = connectionInfo.ContainsKey(AtlasConstants.PICKUP_DELAY) ? (int)connectionInfo[AtlasConstants.PICKUP_DELAY] : 5;
-			int pickupRetries = connectionInfo.ContainsKey(AtlasConstants.PICKUP_RETRIES) ? (int)connectionInfo[AtlasConstants.PICKUP_RETRIES] : 5;
+			
+			int pickupDelay = connectionInfo.ContainsKey(AtlasConstants.PICKUP_DELAY) ? Convert.ToInt32(connectionInfo[AtlasConstants.PICKUP_DELAY]) : 5;
+			int pickupRetries = connectionInfo.ContainsKey(AtlasConstants.PICKUP_RETRIES) ? Convert.ToInt32(connectionInfo[AtlasConstants.PICKUP_RETRIES]) : 5;
 
 			var response = client.RequestNewCertificate(enrollData, pickupDelay, pickupRetries);
 			if (response.Status != PKIConstants.Microsoft.RequestDisposition.ISSUED)
