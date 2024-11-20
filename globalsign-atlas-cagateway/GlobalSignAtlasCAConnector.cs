@@ -71,7 +71,10 @@ namespace Keyfactor.Extensions.AnyGateway.GlobalSign.Atlas
 			Logger.Trace("Enrollment parameters:");
 			Logger.Trace($"CSR: {csr}");
 			Logger.Trace($"Subject: {subject}");
-			Logger.Trace($"DNS SANs: {string.Join(",", san["dns"])}");
+			if (san.ContainsKey("dns"))
+			{
+				Logger.Trace($"DNS SANs: {string.Join(",", san["dns"])}");
+			}
 			Logger.Trace($"Product: {productInfo.ProductID}");
 			Logger.Trace($"Product Params: {string.Join(";", productInfo.ProductParameters.Select(p => p.Key.ToString() + "=" + p.Value.ToString()))}");
 
